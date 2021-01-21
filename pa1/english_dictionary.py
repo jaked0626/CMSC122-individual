@@ -72,10 +72,7 @@ class EnglishDictionary(object):
 
         Returns: list of strings.
         '''
-        if self.is_word(prefix):
-            return [""] + self.words.traverse_nodes(prefix).find_words()
-        else: 
-            return self.words.traverse_nodes(prefix).find_words()
+        return self.words.traverse_nodes(prefix).find_words()
 
 
 
@@ -130,11 +127,11 @@ class TrieNode(object):
         Returns a list of words (strings) under the node. 
         '''
         words = []
+        if self.final:
+            words.append(prefix)
         for child_char, child in self.children.items():
-            if child.final:
-                words += [prefix + child_char]
             words += child.find_words(prefix + child_char)
-        
+
         return words
 
 if __name__ == "__main__":
