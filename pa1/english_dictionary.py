@@ -41,6 +41,12 @@ class EnglishDictionary(object):
 
         Returns: boolean
         '''
+        ### GRADER COMMENT
+        # Generally speaking try...except is not a good use when you
+        # know exactly what exception you are expecting and why it will occur.
+        # Here it would be a lot better to handle the case where word
+        # doesn't exist within self.words in your traverse_nodes function.
+        # Penalty: applied in traverse_nodes function.
         try:
             return self.words.traverse_nodes(w).final
         except:  # word does not exist within self.words
@@ -81,6 +87,10 @@ class TrieNode(object):
         '''
         Constructor
         '''
+        ### GRADER COMMENT
+        # It would be better to use read-only properties for the counter
+        # and boolean, and to make the children private.
+        # Penalty: No Penalty
         self.children = {} # keys will be letters, values the node class
         self.count = 0
         self.final = False
@@ -103,9 +113,9 @@ class TrieNode(object):
 
     def traverse_nodes(self, word):
         '''
-        Of a word already in self, navigates to the node of the last letter in 
-        the word. 
-        
+        Of a word already in self, navigates to the node of the last letter in
+        the word.
+
         Inputs:
           word (string): the word. Must already be within self.
 
@@ -115,16 +125,20 @@ class TrieNode(object):
             return self
         else:
             return self.children[word[0]].traverse_nodes(word[1:])
+        ### GRADER COMMENT
+        # Need to handle the case where there's no link corresponding
+        # to word[0].
+        # Penalty: -3
 
     def find_words(self, prefix=""):
         '''
-        Lists all complete words that are found under a given node. 
+        Lists all complete words that are found under a given node.
 
         Inputs:
           prefix (string): stores the route from the initial node to the
-          current node. Should not be manually entered. 
-        
-        Returns a list of words (strings) under the node. 
+          current node. Should not be manually entered.
+
+        Returns a list of words (strings) under the node.
         '''
         words = []
         if self.final:
