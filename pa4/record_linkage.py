@@ -8,6 +8,7 @@ import pandas as pd
 import jellyfish
 import util
 
+
 def find_matches(mu, lambda_, block_on_city=False):
     '''
     Takes zagat and fodors restaurant information and sorts restaurants into 
