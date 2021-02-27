@@ -9,25 +9,49 @@ import jellyfish
 import util
 
 def find_matches(mu, lambda_, block_on_city=False):
+    '''
+    Takes zagat and fodors restaurant information and sorts restaurants into 
+    a dataframe showing matches, unmatches, and possible matches.
+    Inputs:
+      mu (float): maximum false positive
+      lambda_ (float): maximum false negative
+      block_on_city: boolean indicating whether to block city or not.
+    Returns:
+      matches_df, possible_df, unmatches_df
+    '''
     zagat, fodors, matches, unmatches = read_data()
     
     # Using testing data to produce tuple_partitions 
     match_freq = create_tuple_freq_dic(matches)
     unmatch_freq = create_tuple_freq_dic(unmatches)
     tuples_u_m = map_tuples_to_um(match_freq, unmatch_freq)
-    possible_tuple_combinations = create_combinations(["high", "medium", "low"], 3)
-    match_tuples, possible_tuples, unmatch_tuples = \
-        partition_tuples(possible_tuple_combinations, tuples_u_m, mu, lambda_)
+    match_tuples, unmatch_tuples = \
+        partition_tuples(tuples_u_m, mu, lambda_)
 
     # Produce final dataframes 
 
-    return produce_dfs(zagat, fodors, match_tuples, possible_tuples, unmatch_tuples)
+    return produce_dfs(zagat, fodors, match_tuples, unmatch_tuples, block_on_city)
 
 
-def read_data(name_z="zagat.csv", name_f="fodors.csv", know_links="known_links.csv"):
-    zagat = pd.read_csv("zagat.csv", names = ["rname_z", "city_z", "address_z"])
-    fodors = pd.read_csv("fodors.csv", names = ["rname_f", "city_f", "address_f"])
-    known_links = pd.read_csv("known_links.csv", names = ["zagat", "fodors"], 
+def read_data(name_z_file="zagat.csv", name_f_file="fodors.csv", known_links_file="known_links.csv"):
+    '''
+    Reads in data from csv files and returns the main objects we manipulate
+    in this project. 
+
+    Inputs:
+      name_z_file (optional): the name of the zagat restaurant file
+      name_f_file (optional): the name of the fodors restaurant file
+      known_links_file (optional): the name of the known_links file 
+    Returns:
+      zagat: pandas dataframe conatinaing zagat restaurant info
+      fodors: pandas dataframe conatinaing fodors restaurant info
+      matches: pandas dataframe containing information from all known matches
+      unmatches: pandas dataframe of a random sample of unmatched restaurants
+    '''
+    zagat = pd.read_csv(name_z_file, names = ["rname_z", "city_z", "address_z"])
+    fodors = pd.read_csv(name_f_file, names = ["rname_f", "city_f", "address_f"])
+
+    known_links = pd.read_csv(known_links_file, names = ["zagat", "fodors"], 
                             index_col=False)
     merged_df = pd.merge(left = known_links, right = zagat, left_on = "zagat", 
                         right_index = True)
@@ -44,6 +68,15 @@ def read_data(name_z="zagat.csv", name_f="fodors.csv", know_links="known_links.c
 
 
 def create_tuple_freq_dic(df):
+    '''
+    Given a dataframe containing information from both restaurant databases, 
+    computes a dictionary that maps all the jaro-wrinkler tuples that appeared 
+    among the pair of restaurants to their frequency.
+    Inputs:
+      df: a pandas dataframe 
+    Returns:
+      tuple_frequency: a dictionary that maps jaro-wrinkler tuples to frequency
+    '''
     tuple_frequency = {}
     for row in df.itertuples(index=False):
         jw_tuple = convert_jw_tuple(row, row)
@@ -52,6 +85,15 @@ def create_tuple_freq_dic(df):
     return tuple_frequency
 
 def convert_jw_tuple(row_z, row_f):
+    '''
+    Given two row objects from a pandas dataframe, each containing 
+    information of a restaurant, computes the jaro_winkler tuple of 
+    the two restaurants from each row. 
+    Inputs:
+      row_z: Row from zagat
+      row_f: row from fodors
+    Returns tuple with jarowrinkler for the categories (name, city, address)
+    '''
     name_jw = jellyfish.jaro_winkler(row_z.rname_z, row_f.rname_f)
     city_jw = jellyfish.jaro_winkler(row_z.city_z, row_f.city_f)
     addr_jw = jellyfish.jaro_winkler(row_z.address_z, row_f.address_f)
@@ -59,6 +101,16 @@ def convert_jw_tuple(row_z, row_f):
     return jw_tuple
 
 def map_tuples_to_um(match_freq, unmatch_freq):
+    '''
+    Given dictionaries mapping tuples of matches to their frequencies and 
+    tuples of unmatches to their frequencies, creates a dictionary mapping 
+    each tuple to its u(w), m(w), and m(w)/u(w) values. Absence of a key
+    indicates that value is nonexistent, or zero. 
+    Inputs:
+      match_freq: dictionary mapping tuples of matches to their frequencies
+      unmatch_freq: dictionary 
+    Returns dictionary mapping jaro_winkler tuples to its u(w), m(w), m(w)/u(w)
+    '''
     tuples_u_m = {}
     matches_sum = sum(match_freq.values())
     unmatches_sum = sum(unmatch_freq.values())
@@ -76,10 +128,23 @@ def map_tuples_to_um(match_freq, unmatch_freq):
     return tuples_u_m
 
 
-def partition_tuples(combinations, tuples_u_m, mu, lambda_):
+def partition_tuples(tuples_u_m, mu, lambda_):
+    '''
+    Partition tuples into match_tuples and unmatch_tuples. 
+    Whatever tuples are not in the above two will be sorted into 
+    possible_tuples later, but no such list is necessary for this, and has been 
+    omitted here. 
+    Inputs:
+      tuples_u_m (dic): maps jaro_winkler tuples (appearing in the testing data)
+       to its u(w), m(w), m(w)/u(w)
+      mu(float): mu value
+      lambda_(float): lambda value
+    Returns:
+      match_tuples (list): list of match tuples
+      unmatch_tuples(list) : lsit of unmatch tuples
+    '''
     match_tuples = []
     unmatch_tuples = []
-    possible_tuples = [tup for tup in combinations if not tuples_u_m.get(tup)]
 
     sorted_tuples_um = sorted(tuples_u_m.items(), key=lambda tup: tup[1]["m/u"], 
                               reverse=True)
@@ -88,7 +153,7 @@ def partition_tuples(combinations, tuples_u_m, mu, lambda_):
     cum_m = 0
 
     for i, item in enumerate(sorted_tuples_um):
-        tup, um_dic = item
+        tup, um_dic = item # unpack dictionary mapping m, u, m/u to values
         if um_dic["m/u"] == float('inf'):
             match_tuples.append(tup)
         elif cum_u + um_dic.get("u", 0) <= mu:
@@ -103,24 +168,24 @@ def partition_tuples(combinations, tuples_u_m, mu, lambda_):
         if cum_m + um_dic.get("m", 0) <= lambda_:
             unmatch_tuples.append(tup)
             cum_m += um_dic.get("m", 0)
-        else:
-            possible_tuples += [tup for tup, _ in remaining_tups[:i-1:-1]]
     
-    return match_tuples, possible_tuples, unmatch_tuples
-    
+    return match_tuples, unmatch_tuples
 
-def create_combinations(pattern_lst, len_row):
-    if len_row == 1:
-        return [(element,) for element in pattern_lst]
-    else:
-        final_product = []
-        for element in pattern_lst:
-            for sub_element in create_combinations(pattern_lst, len_row - 1):
-                final_product.append((element,) + sub_element)
-        
-        return final_product
 
-def produce_dfs(zagat, fodors, match_tuples, possible_tuples, unmatch_tuples):
+def produce_dfs(zagat, fodors, match_tuples, unmatch_tuples, block_on_city):
+    '''
+    Produces final output dataframes given the zagat dataframe, fodors dataframe, 
+    list of match_tuples, list of unmatch_tuples, and the boolean for block on 
+    city. 
+    Inputs:
+      zagat: pandas dataframe with zagat info
+      fodors: pandas dataframe with fodors info
+      match_tuples (list): list of match tuples
+      unmatch_tuples(list) : lsit of unmatch tuples
+      block_on_city: boolean indicating whether to block city or not.
+    Returns:
+      matches_df, possible_df, unmatches_df
+    '''
     match_z = []
     match_f = []
     unmatch_z = []
@@ -131,16 +196,17 @@ def produce_dfs(zagat, fodors, match_tuples, possible_tuples, unmatch_tuples):
         i_z = row_z.Index
         for row_f in fodors.itertuples():
             i_f = row_f.Index
-            jw_tuple = convert_jw_tuple(row_z, row_f)
-            if jw_tuple in match_tuples:
-                match_z.append(i_z)
-                match_f.append(i_f)
-            elif jw_tuple in unmatch_tuples:
-                unmatch_z.append(i_z)
-                unmatch_f.append(i_f)
-            else:
-                possible_z.append(i_z)
-                possible_f.append(i_f)
+            if not (block_on_city and row_z.city_z != row_f.city_f):  # block_city
+                jw_tuple = convert_jw_tuple(row_z, row_f)
+                if jw_tuple in match_tuples:
+                    match_z.append(i_z)
+                    match_f.append(i_f)
+                elif jw_tuple in unmatch_tuples:
+                    unmatch_z.append(i_z)
+                    unmatch_f.append(i_f)
+                else:
+                    possible_z.append(i_z)
+                    possible_f.append(i_f)
 
     matches_df = pd.concat([zagat.loc[match_z].reset_index(drop=True), 
                            fodors.loc[match_f].reset_index(drop=True)], axis = 1)
@@ -151,22 +217,7 @@ def produce_dfs(zagat, fodors, match_tuples, possible_tuples, unmatch_tuples):
     
     return matches_df, possible_df, unmatches_df
                 
-
-    
-
-
-
-# iterating through, use apply (where one of the data frames will be expanded to iterate through), 
-# add column with possible, match, unmatch, seed each with an index and combine? 
-# or, as suggested by prof, take indices, record, then slice them. Can groupby be used by any chance? 
-
-
-# add to list of indices: one for z and the other for f. then slice and merge to get final dataframe. 
-
-# test_merge = pd.concat([zagat.loc[[1, 2, 3, 5, 6]].reset_index(drop=True), fodors.loc[[87, 24, 3, 1, 5]].reset_index(drop=True)], axis = 1) 
-
-
-
+ 
 
 
 
