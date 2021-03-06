@@ -18,7 +18,6 @@ class Markov:
         self.kgram_hash = Hash_Table.Hash_Table(HASH_CELLS, 0)
         self.train_markov(s)
 
-
     def log_probability(self,s):
         '''
         Get the log probability of string "s", given the statistics of
@@ -38,6 +37,13 @@ class Markov:
         return sum_prob
                 
     def train_markov(self, s):
+        '''
+        Train markov model by passing in string(s) and recording the number of 
+        occurences of k+1 grams and kgrams. 
+        Inputs:
+          s: string
+        Does not return anything but modifies self.kgram_hash
+        '''
         s = s[-self.k:] + s
         for i, _ in enumerate(s):
             if i >= self.k:
@@ -45,13 +51,12 @@ class Markov:
                 prefix = s[i-self.k:i]
                 self.kgram_hash.update(whole, self.kgram_hash.lookup(whole) + 1)
                 self.kgram_hash.update(prefix, self.kgram_hash.lookup(prefix) + 1)
-            #else:
-                #kgram = s[i - k:] + s[:i]
-                #self.k_gram_hash.update(char, kgram)
     
     def lookup(self, key):
+        '''
+        Looks up the count of key in self.kgram_hash
+        '''
         return self.kgram_hash.lookup(key)
-
 
 
 def identify_speaker(speech1, speech2, speech3, order):

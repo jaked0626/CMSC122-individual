@@ -19,48 +19,50 @@ class Hash_Table:
         self.cells = cells
         self.count = 0
 
-
     def lookup(self,key):
         '''
         Retrieve the value associated with the specified key in the hash table,
         or return the default value if it has not previously been inserted.
-        '''
-        if isinstance(key, list):
-            return [self.lookup(one_key) for one_key in key]
-        else:    
-            index = self.hash_key(key) # ask about below while syntax
-            while self._table[index % len(self._table)] and \
-                self._table[index % len(self._table)][0] != key:
-                index += 1
-            if self._table[index % len(self._table)]:
-                return self._table[index % len(self._table)][1]           
-            else:
-                return self.defval
+        ''' 
+        index = self.hash_key(key)
 
+        while self._table[index % len(self._table)] and \
+            self._table[index % len(self._table)][0] != key: # nonempty and != key
+            index += 1
+        if self._table[index % len(self._table)]: # if not none then this is the key
+            return self._table[index % len(self._table)][1]           
+        else:
+            return self.defval
 
     def update(self,key,val):
         '''
         Change the value associated with key "key" to value "val".
         If "key" is not currently present in the hash table,  insert it with
         value "val".
-        ''' # needs work with overwriting value 
+        ''' 
         index = self.hash_key(key)
         while self._table[index % len(self._table)] \
               and self._table[index % len(self._table)][0] != key:
             index += 1
-        if not self._table[index % len(self._table)]:
-            self.count += 1
+        if not self._table[index % len(self._table)]:  # new entry 
+            self.count += 1  # increment count
             if self.count > (len(self._table) * TOO_FULL):
                 self.rehash()
         self._table[index % len(self._table)] = (key, val)
 
     def hash_key(self, key):
+        '''
+        Hash function that takes a key and returns it in hashed form.
+        '''
         hash_ = 0
         for char in key:
             hash_ = (hash_ * 37 + ord(char)) % len(self._table)
         return hash_
 
     def rehash(self, growth_ratio=GROWTH_RATIO):
+        '''
+        Expands hash table(self._table) by rate stipulated in growth_ratio
+        '''
         self.count = 0
         backup = []
         for tup in self._table:
