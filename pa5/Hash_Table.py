@@ -1,5 +1,5 @@
 # CS122 W'21: Markov models and hash tables
-# YOUR NAME HERE
+# Jake Underland
 
 
 TOO_FULL = 0.5
@@ -14,7 +14,10 @@ class Hash_Table:
         parameter "cells", and which yields the value defval upon a lookup to a
         key that has not previously been inserted
         '''
-        ### YOUR CODE HERE ###
+        self._table = [None] * cells
+        self.defval = defval
+        self.cells = cells
+        self.count = 0
 
 
     def lookup(self,key):
@@ -22,7 +25,17 @@ class Hash_Table:
         Retrieve the value associated with the specified key in the hash table,
         or return the default value if it has not previously been inserted.
         '''
-        ### YOUR CODE HERE ###
+        if isinstance(key, list):
+            return [self.lookup(one_key) for one_key in key]
+        else:    
+            index = self.hash_key(key) # ask about below while syntax
+            while self._table[index % len(self._table)] and \
+                self._table[index % len(self._table)][0] != key:
+                index += 1
+            if self._table[index % len(self._table)]:
+                return self._table[index % len(self._table)][1]           
+            else:
+                return self.defval
 
 
     def update(self,key,val):
@@ -30,6 +43,31 @@ class Hash_Table:
         Change the value associated with key "key" to value "val".
         If "key" is not currently present in the hash table,  insert it with
         value "val".
-        '''
-        ### YOUR CODE HERE ###
+        ''' # needs work with overwriting value 
+        index = self.hash_key(key)
+        while self._table[index % len(self._table)] \
+              and self._table[index % len(self._table)][0] != key:
+            index += 1
+        if not self._table[index % len(self._table)]:
+            self.count += 1
+            if self.count > (len(self._table) * TOO_FULL):
+                self.rehash()
+        self._table[index % len(self._table)] = (key, val)
+
+    def hash_key(self, key):
+        hash_ = 0
+        for char in key:
+            hash_ = (hash_ * 37 + ord(char)) % len(self._table)
+        return hash_
+
+    def rehash(self, growth_ratio=GROWTH_RATIO):
+        self.count = 0
+        backup = []
+        for tup in self._table:
+            if tup:
+                backup.append(tup)
+        self._table = [None] * len(self._table) * growth_ratio
+        for key, value in backup:
+            self.update(key, value)
+
 

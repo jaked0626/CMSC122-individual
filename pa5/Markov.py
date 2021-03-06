@@ -1,5 +1,5 @@
 # CS122 W'21: Markov models and hash tables
-# YOUR NAME HERE
+# Jake Underland
 
 import sys
 import math
@@ -13,7 +13,10 @@ class Markov:
         '''
         Construct a new k-order Markov model using the statistics of string "s"
         '''
-        ### YOUR CODE HERE ###
+        self.k = k
+        self.s = s
+        self.kgram_hash = Hash_Table.Hash_Table(HASH_CELLS, 0)
+        self.train_markov(s)
 
 
     def log_probability(self,s):
@@ -22,7 +25,33 @@ class Markov:
         character sequences modeled by this particular Markov model
         This probability is *not* normalized by the length of the string.
         '''
-        ### YOUR CODE HERE ###
+        alphabet = set(self.s)
+        s = s[-self.k:] + s
+        sum_prob = 0
+        for i, _ in enumerate(s):
+            if i >= self.k:
+                whole = s[i-self.k:i+1]
+                prefix = s[i-self.k:i]
+                sum_prob += math.log((self.lookup(whole) + 1) \
+                         / (self.lookup(prefix) + len(alphabet)))
+        
+        return sum_prob
+                
+    def train_markov(self, s):
+        s = s[-self.k:] + s
+        for i, _ in enumerate(s):
+            if i >= self.k:
+                whole = s[i-self.k:i+1]
+                prefix = s[i-self.k:i]
+                self.kgram_hash.update(whole, self.kgram_hash.lookup(whole) + 1)
+                self.kgram_hash.update(prefix, self.kgram_hash.lookup(prefix) + 1)
+            #else:
+                #kgram = s[i - k:] + s[:i]
+                #self.k_gram_hash.update(char, kgram)
+    
+    def lookup(self, key):
+        return self.kgram_hash.lookup(key)
+
 
 
 def identify_speaker(speech1, speech2, speech3, order):
@@ -34,7 +63,16 @@ def identify_speaker(speech1, speech2, speech3, order):
     and a conclusion of which speaker uttered the unidentified text
     based on the two probabilities.
     '''
-    ### YOUR CODE HERE ###
+    speakerA = Markov(order, speech1)
+    speakerB = Markov(order, speech2)
+    norm_probA = speakerA.log_probability(speech3) / len(speech3)
+    norm_probB = speakerB.log_probability(speech3) / len(speech3)
+    if norm_probA > norm_probB:
+        conclusion = "A"
+    else:
+        conclusion = "B"
+    
+    return norm_probA, norm_probB, conclusion
 
 
 def print_results(res_tuple):
