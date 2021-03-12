@@ -56,7 +56,7 @@ class Markov:
         '''
         Looks up the count of key in self.kgram_hash
         '''
-        return self.kgram_hash.lookup(key)
+        return self.kgram_hash.lookup(key)  ###GRADER COMMENT: This doens't need tobe a helper function.
 
 
 def identify_speaker(speech1, speech2, speech3, order):

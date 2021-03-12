@@ -40,18 +40,18 @@ class Hash_Table:
         If "key" is not currently present in the hash table,  insert it with
         value "val".
         ''' 
-        index = self.hash_key(key)
+        index = self.hash_key(key)                                  
         while self._table[index % len(self._table)] \
-              and self._table[index % len(self._table)][0] != key:
-            index += 1
-        if not self._table[index % len(self._table)]:  # new entry 
-            self.count += 1  # increment count
+              and self._table[index % len(self._table)][0] != key:  ###GRADER COMMENT: Here you repeat much of the code
+            index += 1                                              #from your lookup function that would better be served
+        if not self._table[index % len(self._table)]:  # new entry  #in a helper function.
+            self.count += 1  # increment count                      #PENALTY: -3 (structure and style)
             if self.count > (len(self._table) * TOO_FULL):
                 self.rehash()
-        self._table[index % len(self._table)] = (key, val)
-
-    def hash_key(self, key):
-        '''
+        self._table[index % len(self._table)] = (key, val)          ###GRADER COMMENT: This is a problem because you find an
+                                                                    #index on the original table, and then rehash to make a new
+    def hash_key(self, key):                                        #table, but keep the old index. This is why you fail tests.
+        '''                                                         #PENALTY: -2 (rehash)
         Hash function that takes a key and returns it in hashed form.
         '''
         hash_ = 0
